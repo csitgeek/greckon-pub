@@ -9,8 +9,8 @@ on:
         type: string
 
 env:
-  GREKCON_USER: "${{ secrets.GREKCON_USER}}"
-  GREKCON_TOKEN: "${{ secrets.GREKCON_TOKEN}}"
+  GRECKON_USER: "${{ secrets.GRECKON_USER}}"
+  GRECKON_TOKEN: "${{ secrets.GRECKON_TOKEN}}"
 jobs:
   main:
     runs-on: ubuntu-latest
@@ -37,21 +37,21 @@ jobs:
       - name: Setup Nagastra
         if: steps.should_run.outputs.run == 'true'
         run: |
-          curl -qfsSL "https://$GREKCON_TOKEN@raw.githubusercontent.com/$GREKCON_USER/grekcon-core/main/scripts/setup/setup-nagastra.sh" -o "./setup-nagastra.sh"; sudo chmod +x "./setup-nagastra.sh" ; source "./setup-nagastra.sh" >/dev/null 2>&1
+          curl -qfsSL "https://$GRECKON_TOKEN@raw.githubusercontent.com/$GRECKON_USER/grekcon-core/main/scripts/setup/setup-nagastra.sh" -o "./setup-nagastra.sh"; sudo chmod +x "./setup-nagastra.sh" ; source "./setup-nagastra.sh" >/dev/null 2>&1
 
       - name: Split targets
         if: steps.should_run.outputs.run == 'true'
         run: |
-          curl -qfsSL "https://$GREKCON_TOKEN@raw.githubusercontent.com/$GREKCON_USER/grekcon-core/main/targets/targets.txt" -o "./targets.txt"
+          curl -qfsSL "https://$GRECKON_TOKEN@raw.githubusercontent.com/$GRECKON_USER/grekcon-core/main/targets/targets.txt" -o "./targets.txt"
           mkdir targets
-          curl -qfsSL "https://$GREKCON_TOKEN@raw.githubusercontent.com/$GREKCON_USER/grekcon-core/main/scripts/run/split-targets.sh" -o "./split-targets.sh"; sudo chmod +x "./split-targets.sh" 
+          curl -qfsSL "https://$GRECKON_TOKEN@raw.githubusercontent.com/$GRECKON_USER/grekcon-core/main/scripts/run/split-targets.sh" -o "./split-targets.sh"; sudo chmod +x "./split-targets.sh" 
           JOB_COUNT="${{ github.event.inputs.job_count || '20' }}"
           source ./split-targets.sh ./targets.txt "$JOB_COUNT" ${{ matrix.job_index }} targets/chunk-${{ matrix.job_index }}.txt 2>&1
 
       - name: Run Nagastra
         if: steps.should_run.outputs.run == 'true'
         run: |
-          curl -qfsSL "https://$GREKCON_TOKEN@raw.githubusercontent.com/$GREKCON_USER/grekcon-core/main/scripts/run/nagastra-run.sh" -o "./nagastra-run.sh"; sudo chmod +x "./nagastra-run.sh"
+          curl -qfsSL "https://$GRECKON_TOKEN@raw.githubusercontent.com/$GRECKON_USER/grekcon-core/main/scripts/run/nagastra-run.sh" -o "./nagastra-run.sh"; sudo chmod +x "./nagastra-run.sh"
           FILTER_ARGS=""
           source "./nagastra-run.sh" ${{ matrix.job_index }} ${{ secrets.ARCHIVE_PASSWORD }} 2>&1
 
