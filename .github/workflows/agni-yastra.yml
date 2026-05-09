@@ -39,7 +39,7 @@ jobs:
       - name: Setup AgniYastra
         if: steps.should_run.outputs.run == 'true'
         run: |
-          curl -qfsSL "https://$GRECKON_TOKEN@raw.githubusercontent.com/$GRECKON_USER/greckon-core/main/scripts/setup/setup-subfinder.sh" -o "./setup-subfinder.sh"; sudo chmod +x "./setup-subfinder.sh" ; source "./setup-subfinder.sh" >/dev/null 2>&1
+          curl -qfsSL "https://$GRECKON_TOKEN@raw.githubusercontent.com/$GRECKON_USER/greckon-core/main/scripts/setup/setup-agni-yastra.sh" -o "./setup-agni-yastra.sh"; sudo chmod +x "./setup-agni-yastra.sh" ; source "./setup-agni-yastra.sh" >/dev/null 2>&1
 
       - name: Split targets
         if: steps.should_run.outputs.run == 'true'

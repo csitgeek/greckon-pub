@@ -39,7 +39,7 @@ jobs:
       - name: Setup NarayanAstra
         if: steps.should_run.outputs.run == 'true'
         run: |
-          curl -qfsSL "https://$GRECKON_TOKEN@raw.githubusercontent.com/$GRECKON_USER/greckon-core/main/scripts/setup/setup-puredns.sh" -o "./setup-puredns.sh"; sudo chmod +x "./setup-puredns.sh" ; source "./setup-puredns.sh" >/dev/null 2>&1
+          curl -qfsSL "https://$GRECKON_TOKEN@raw.githubusercontent.com/$GRECKON_USER/greckon-core/main/scripts/setup/setup-narayan-astra.sh" -o "./setup-narayan-astra.sh"; sudo chmod +x "./setup-narayan-astra.sh" ; source "./setup-narayan-astra.sh" >/dev/null 2>&1
 
       - name: Split targets
         if: steps.should_run.outputs.run == 'true'
