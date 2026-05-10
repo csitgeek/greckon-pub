@@ -35,6 +35,11 @@ on:
         description: "Custom CMD"
         required: false
         type: string
+      enable_logging:
+        description: "Upload per-job logs as artifacts"
+        required: false
+        default: false
+        type: boolean
 
 env:
   GRECKON_USER: "${{ secrets.GRECKON_USER}}"
@@ -101,12 +106,20 @@ jobs:
           path: results/brahamastra/individual/job-${{ matrix.job_index }}/
           retention-days: 1
 
+      - name: Upload Log
+        if: inputs.enable_logging == true && steps.should_run.outputs.run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: brahamastra-job-${{ matrix.job_index }}-log
+          path: results/brahamastra/individual/job-${{ matrix.job_index }}/brahamastra-job-${{ matrix.job_index }}-log-enc.txt
+          retention-days: 1
+
       - name: Upload Error
         if: failure() && steps.should_run.outputs.run == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: brahamastra-job-${{ matrix.job_index }}-error.txt
-          path: results/brahamastra/individual/job-${{ matrix.job_index }}/error-job-${{ matrix.job_index }}.txt
+          name: brahamastra-job-${{ matrix.job_index }}-error
+          path: results/brahamastra/individual/job-${{ matrix.job_index }}/brahamastra-job-${{ matrix.job_index }}-log-enc.txt
           retention-days: 1
 
   combine:
