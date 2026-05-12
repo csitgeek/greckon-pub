@@ -13,6 +13,16 @@ on:
         required: false
         default: false
         type: boolean
+      cascade:
+        description: "Automatically trigger the full pipeline after this run completes"
+        required: false
+        default: false
+        type: boolean
+      file_path:
+        description: "Path to targets file in greckon-core (e.g. targets/targets.txt, test/example.txt)"
+        required: false
+        default: "targets/targets.txt"
+        type: string
 
 env:
   GRECKON_USER: "${{ secrets.GRECKON_USER}}"
@@ -49,7 +59,7 @@ jobs:
       - name: Split targets
         if: steps.should_run.outputs.run == 'true'
         run: |
-          curl -qfsSL "https://$GRECKON_TOKEN@raw.githubusercontent.com/$GRECKON_USER/greckon-core/main/targets/targets.txt" -o "./targets.txt"
+          curl -qfsSL "https://$GRECKON_TOKEN@raw.githubusercontent.com/$GRECKON_USER/greckon-core/main/${{ github.event.inputs.file_path || 'targets/targets.txt' }}" -o "./targets.txt"
           mkdir targets
           curl -qfsSL "https://$GRECKON_TOKEN@raw.githubusercontent.com/$GRECKON_USER/greckon-core/main/scripts/run/split-targets.sh" -o "./split-targets.sh"; sudo chmod +x "./split-targets.sh"
           JOB_COUNT="${{ github.event.inputs.job_count || '20' }}"

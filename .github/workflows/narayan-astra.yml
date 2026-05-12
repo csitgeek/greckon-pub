@@ -13,6 +13,14 @@ on:
         required: false
         default: false
         type: boolean
+      file_path:
+        description: "Path to targets file in greckon-core (e.g. targets/targets.txt, test/example.txt)"
+        required: false
+        default: "targets/targets.txt"
+        type: string
+  workflow_run:
+    workflows: ["AgniYastra"]
+    types: [completed]
 
 env:
   GRECKON_USER: "${{ secrets.GRECKON_USER}}"
@@ -21,6 +29,12 @@ env:
 jobs:
   main:
     runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       (github.event.workflow_run.event == 'workflow_run' ||
+        github.event.workflow_run.inputs.cascade == 'true'))
     strategy:
       matrix:
         job_index:
@@ -46,14 +60,31 @@ jobs:
         run: |
           curl -qfsSL "https://$GRECKON_TOKEN@raw.githubusercontent.com/$GRECKON_USER/greckon-core/main/scripts/setup/setup-narayan-astra.sh" -o "./setup-narayan-astra.sh"; sudo chmod +x "./setup-narayan-astra.sh" ; source "./setup-narayan-astra.sh" >/dev/null 2>&1
 
-      - name: Split targets
-        if: steps.should_run.outputs.run == 'true'
+      - name: Split targets (standalone mode)
+        if: github.event_name == 'workflow_dispatch' && steps.should_run.outputs.run == 'true'
         run: |
-          curl -qfsSL "https://$GRECKON_TOKEN@raw.githubusercontent.com/$GRECKON_USER/greckon-core/main/targets/targets.txt" -o "./targets.txt"
+          curl -qfsSL "https://$GRECKON_TOKEN@raw.githubusercontent.com/$GRECKON_USER/greckon-core/main/${{ github.event.inputs.file_path || 'targets/targets.txt' }}" -o "./targets.txt"
           mkdir targets
           curl -qfsSL "https://$GRECKON_TOKEN@raw.githubusercontent.com/$GRECKON_USER/greckon-core/main/scripts/run/split-targets.sh" -o "./split-targets.sh"; sudo chmod +x "./split-targets.sh"
           JOB_COUNT="${{ github.event.inputs.job_count || '20' }}"
           source ./split-targets.sh ./targets.txt "$JOB_COUNT" ${{ matrix.job_index }} targets/chunk-${{ matrix.job_index }}.txt 2>&1
+
+      - name: Download AgniYastra output (pipeline mode)
+        if: github.event_name == 'workflow_run' && steps.should_run.outputs.run == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: agni-yastra-result
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: .
+
+      - name: Decrypt and split targets (pipeline mode)
+        if: github.event_name == 'workflow_run' && steps.should_run.outputs.run == 'true'
+        run: |
+          unzip -P ${{ secrets.ARCHIVE_PASSWORD }} main.zip
+          mkdir targets
+          curl -qfsSL "https://$GRECKON_TOKEN@raw.githubusercontent.com/$GRECKON_USER/greckon-core/main/scripts/run/split-targets.sh" -o "./split-targets.sh"; sudo chmod +x "./split-targets.sh"
+          source ./split-targets.sh ./main.txt "20" ${{ matrix.job_index }} targets/chunk-${{ matrix.job_index }}.txt 2>&1
 
       - name: Run NarayanAstra
         if: steps.should_run.outputs.run == 'true'
@@ -88,7 +119,13 @@ jobs:
   combine:
     needs: main
     runs-on: ubuntu-latest
-    if: always()
+    if: >-
+      always() &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'workflow_run' &&
+        github.event.workflow_run.conclusion == 'success' &&
+        (github.event.workflow_run.event == 'workflow_run' ||
+         github.event.workflow_run.inputs.cascade == 'true')))
 
     steps:
       - name: Checkout repository
