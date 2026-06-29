@@ -110,21 +110,41 @@ jobs:
 
       - name: Decrypt and Combine results
         run: |
-          mkdir -p decrypted
+          mkdir -p decrypted domains
 
           for enc_file in $(find results/ -name "nagastra-job-*-enc.txt" -type f); do
-            filename=$(basename "$enc_file")
-            dec_file="decrypted/${filename%.txt}.dec.txt"
-            openssl enc -aes256 -salt -pbkdf2 -d -in "$enc_file" -out "$dec_file" -k ${{secrets.ARCHIVE_PASSWORD}}
+            dec_tar="decrypted/$(basename "${enc_file%.txt}").tar.gz"
+            openssl enc -aes256 -salt -pbkdf2 -d -in "$enc_file" -out "$dec_tar" -k ${{secrets.ARCHIVE_PASSWORD}}
+            tar -xzf "$dec_tar" -C domains
           done
 
-          cat decrypted/*.txt > main.txt
+          zip -P ${{secrets.ARCHIVE_PASSWORD}} -r nagastra-urls.zip domains
+          { cat domains/*.txt 2>/dev/null || true; } | sort -u > main.txt
           zip -P ${{secrets.ARCHIVE_PASSWORD}} -r main.zip main.txt
-          rm main.txt
+
+      - name: Upload per-domain URLs
+        uses: actions/upload-artifact@v4
+        with:
+          name: nagastra-urls
+          path: nagastra-urls.zip
+          retention-days: 30
 
       - name: Upload final Result
         uses: actions/upload-artifact@v4
         with:
           name: nagastra-result
           path: main.zip
+          retention-days: 30
+
+      - name: FTS5 store
+        run: |
+          curl -qfsSL "https://$GRECKON_TOKEN@raw.githubusercontent.com/$GRECKON_USER/greckon-core/main/scripts/ingest/nagastra-ingest.py" -o "./nagastra-ingest.py"
+          python3 nagastra-ingest.py main.txt nagastra.db
+          zip -P ${{secrets.ARCHIVE_PASSWORD}} nagastra-db.zip nagastra.db
+
+      - name: Uplaod Store Result
+        uses: actions/upload-artifact@v4
+        with:
+          name: nagastra-db
+          path: nagastra-db.zip
           retention-days: 30
