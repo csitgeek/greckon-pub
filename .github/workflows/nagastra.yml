@@ -112,7 +112,7 @@ jobs:
         run: |
           mkdir -p decrypted domains
 
-          for enc_file in $(find results/ -name "nagastra-job-*-enc.txt" -type f); do
+          for enc_file in $(find results/ -name "nagastra-job-*-enc.txt" ! -name "*-log-enc.txt" -type f); do
             dec_tar="decrypted/$(basename "${enc_file%.txt}").tar.gz"
             openssl enc -aes256 -salt -pbkdf2 -d -in "$enc_file" -out "$dec_tar" -k ${{secrets.ARCHIVE_PASSWORD}}
             tar -xzf "$dec_tar" -C domains
